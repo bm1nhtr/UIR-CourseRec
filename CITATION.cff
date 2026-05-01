@@ -1,0 +1,8 @@
+cff-version: "1.2.0"
+title: "Reward Shaping for Reinforcement Learning-Based Job-Oriented Course Recommendation"
+message: "If you use this software, please cite it using the metadata in this file."
+type: software
+license: MIT
+authors:
+  - name: "Binh-Minh TRAN"
+repository-code: "https://github.com/bm1nhtr/UIR-CourseRec"

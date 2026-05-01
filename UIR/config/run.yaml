@@ -44,12 +44,11 @@ feature: "Weighted-Usefulness-as-Rwd"                         # Feature type for
 # 3. Advanced model: Weighted combination of job applicability and skill development
 
 # Model Hyperparameters for feature "Weighted-Usefulness-as-Rwd"
+
 model_weights:
   dqn:
-    beta1: 0.1                                        # Weight for job applications in reward calculation
-    beta2: 0.9                                        # Weight for utility in reward calculation
+    beta1: 0.9
+    beta2: 0.09999999999999998
   ppo:
-    beta1: 0.1                                        # Weight for job applications in reward calculation
-    beta2: 0.9                                        # Weight for utility in reward calculation
-
-
+    beta1: 0.1
+    beta2: 0.9

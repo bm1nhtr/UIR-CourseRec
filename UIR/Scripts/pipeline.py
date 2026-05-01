@@ -13,44 +13,39 @@ from Dataset import Dataset
 from Reinforce import Reinforce
 
 
+def _uir_root() -> str:
+    """Directory UIR/ (parent of this script's folder)."""
+    return os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+
+
+def _repo_root() -> str:
+    """Repository root (parent of UIR/)."""
+    return os.path.abspath(os.path.join(_uir_root(), ".."))
+
+
 def adjust_paths_for_current_location(config):
-    """Adjust file paths in config based on current working directory.
-    
-    This function ensures that file paths work whether the script is run from
-    the project root (via run_clean.py) or from UIR/Scripts/ directory.
+    """Resolve data and results paths from repo root (anchored to __file__, not cwd).
     
     Args:
         config (dict): Configuration dictionary containing file paths
         
     Returns:
-        dict: Configuration with adjusted paths
+        dict: Configuration with absolute paths
     """
-    import os
-    
-    # Check if we're running from UIR/Scripts/ directory
-    current_dir = os.getcwd()
-    if current_dir.endswith('UIR/Scripts') or current_dir.endswith('UIR\\Scripts'):
-        # We're in UIR/Scripts/, need to go up 2 levels to reach project root
-        prefix = "../../"
-    else:
-        # We're in project root, paths are already correct
-        prefix = ""
-    
-    # Adjust all file paths
-    path_keys = ['taxonomy_path', 'course_path', 'cv_path', 'job_path', 'mastery_levels_path']
+    repo_root = _repo_root()
+    uir_root = _uir_root()
+    path_keys = [
+        "taxonomy_path",
+        "course_path",
+        "cv_path",
+        "job_path",
+        "mastery_levels_path",
+    ]
     for key in path_keys:
-        if key in config and not config[key].startswith(prefix):
-            config[key] = prefix + config[key]
-    
-    # Adjust results path
-    if 'results_path' in config:
-        if current_dir.endswith('UIR/Scripts') or current_dir.endswith('UIR\\Scripts'):
-            # We're in UIR/Scripts/, results should be in UIR/results
-            config['results_path'] = '../results'
-        else:
-            # We're in project root, results should be in UIR/results
-            config['results_path'] = 'UIR/results'
-    
+        if key in config and not os.path.isabs(config[key]):
+            config[key] = os.path.normpath(os.path.join(repo_root, config[key]))
+    if "results_path" in config:
+        config["results_path"] = os.path.join(uir_root, "results")
     return config
 
 def create_and_print_dataset(config):

@@ -15,132 +15,57 @@ os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 warnings.filterwarnings('ignore', category=FutureWarning)
 warnings.filterwarnings('ignore', category=UserWarning)
 
+
+def _uir_root() -> str:
+    """Directory UIR/ (parent of this script's folder)."""
+    return os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+
+
+def _repo_root() -> str:
+    """Repository root (parent of UIR/)."""
+    return os.path.abspath(os.path.join(_uir_root(), ".."))
+
+
 def adjust_paths_for_current_location(config):
-    """Adjust file paths in config based on current working directory.
-    
-    This function ensures that file paths work whether the script is run from
-    the project root (via run_clean.py) or from UIR/Scripts/ directory.
+    """Resolve data and results paths from repo root (anchored to __file__, not cwd).
     
     Args:
         config (dict): Configuration dictionary containing file paths
         
     Returns:
-        dict: Configuration with adjusted paths
+        dict: Configuration with absolute paths
     """
-    # Check if we're running from UIR/Scripts/ directory
-    current_dir = os.getcwd()
-    if current_dir.endswith('UIR/Scripts') or current_dir.endswith('UIR\\Scripts'):
-        # We're in UIR/Scripts/, need to go up 2 levels to reach project root
-        prefix = "../../"
-    else:
-        # We're in project root, paths are already correct
-        prefix = ""
-    
-    # Adjust all file paths
-    path_keys = ['taxonomy_path', 'course_path', 'cv_path', 'job_path', 'mastery_levels_path']
+    repo_root = _repo_root()
+    uir_root = _uir_root()
+    path_keys = [
+        "taxonomy_path",
+        "course_path",
+        "cv_path",
+        "job_path",
+        "mastery_levels_path",
+    ]
     for key in path_keys:
-        if key in config and not config[key].startswith(prefix):
-            config[key] = prefix + config[key]
-    
-    # Adjust results path
-    if 'results_path' in config:
-        if current_dir.endswith('UIR/Scripts') or current_dir.endswith('UIR\\Scripts'):
-            # We're in UIR/Scripts/, results should be in UIR/results
-            config['results_path'] = '../results'
-        else:
-            # We're in project root, results should be in UIR/results
-            config['results_path'] = 'UIR/results'
-    
+        if key in config and not os.path.isabs(config[key]):
+            config[key] = os.path.normpath(os.path.join(repo_root, config[key]))
+    if "results_path" in config:
+        config["results_path"] = os.path.join(uir_root, "results")
     return config
 
 """
 Integration with pipeline.py:
----------------------------
-This module is designed to work with the main pipeline.py in the following ways:
+-----------------------------
+- Grid search over beta1 with beta2 = 1 - beta1 (see WeightOptimizer.grid_search).
+  For each combination, trains one RL model per k in {1,2,3}, evaluates mean
+  applicable jobs across learners, then averages scores across k.
+- Writes plot_results PNG under UIR/weight/weight_optimization_results_<model>.png.
+- optimize_weights() merges best beta1/beta2 into the YAML config key model_weights
+  for the configured algorithm; pipeline.py reads those weights for CourseRecEnv.
 
-1. Configuration Integration:
-   - The weights (beta1, beta2) found by this module should be added to the config file
-   - The config file is then used by pipeline.py for model training
-   Example config addition:
-   ```yaml
-   feature: "Weighted-Usefulness-as-Rwd"
-   beta1: 0.5  # Value found by this module
-   beta2: 0.5  # Value found by this module
-   ```
+CLI from repository root:
+  python UIR/Scripts/weight_optimization.py --config UIR/config/run.yaml
 
-2. Pipeline Flow:
-   a. Run this module first to find optimal weights:
-      ```bash
-      python weight_optimization.py
-      ```
-   b. Add the found weights to config/run.yaml
-   c. Run the main pipeline:
-      ```bash
-      python pipeline.py --config config/run.yaml
-      ```
+Or: python run.py --mode weights (wrapper around this script).
 
-3. MLflow Integration:
-   - The weights found by this module will be logged as parameters in MLflow
-   - They will appear in the MLflow UI under the run parameters
-   - The results (heatmap, best weights) will be saved as artifacts
-
-4. Usage in pipeline.py:
-   - The weights are used when creating the CourseRecEnv in the Reinforce class
-   - They affect the reward calculation during model training
-   - The results influence the model's performance metrics logged in MLflow
-
-Usage Instructions:
------------------
-1. Basic Usage:
-   ```python
-   python weight_optimization.py
-   ```
-
-2. Integration with Pipeline:
-   ```python
-   from weight_optimization import grid_search_weights
-   
-   # Load your dataset
-   dataset = Dataset()
-   
-   # Find optimal weights
-   best_beta1, best_beta2, results = grid_search_weights(
-       dataset,
-       beta1_range=np.linspace(0.1, 1.0, 5),
-       beta2_range=np.linspace(0.1, 1.0, 5)
-   )
-   
-   # Use the weights in your main training
-   env = CourseRecEnv(
-       dataset=dataset,
-       feature="Weighted-Usefulness-as-Rwd",
-       beta1=best_beta1,
-       beta2=best_beta2
-   )
-   ```
-
-3. Output Files:
-   - weight_optimization_results.png: Heatmap visualization
-   - weight_optimization_results.npy: Raw results matrix
-   - best_weights.npy: Best beta1 and beta2 values
-
-4. Customization:
-   - Adjust beta ranges in main()
-   - Modify n_eval_episodes for more/less evaluation
-   - Change total_timesteps in evaluate_weights() for training duration
-
-Dependencies:
-------------
-- numpy: For numerical operations
-- stable_baselines3: For RL model training
-- matplotlib: For visualization
-- tqdm: For progress tracking
-- CourseRecEnv: The environment class
-- Dataset: The dataset class
-
-Note: This module should be run before the main training pipeline to determine
-the optimal weights for the weighted reward function. The results should be
-added to the configuration file used by pipeline.py.
 """
 
 import numpy as np
@@ -152,7 +77,6 @@ from tqdm import tqdm
 import argparse
 import yaml
 import copy
-import os
 
 class WeightOptimizer:
     """
@@ -277,11 +201,13 @@ def plot_results(beta1_range, results, model_name):
     )
     plt.tight_layout()
     
-    # Save to weight folder
-    weight_dir = os.path.join('Code', 'weight')
+    # Always under <repo>/UIR/weight regardless of cwd
+    weight_dir = os.path.join(_uir_root(), "weight")
     os.makedirs(weight_dir, exist_ok=True)
-    plt.savefig(os.path.join(weight_dir, f'weight_optimization_results_{model_name}.png'))
+    out_path = os.path.join(weight_dir, f'weight_optimization_results_{model_name}.png')
+    plt.savefig(out_path)
     plt.close()
+    print(f"  [PLOT] Saved {out_path}")
 
 def optimize_weights(config_path):
     """Run weight optimization and update config file.
@@ -349,7 +275,7 @@ def optimize_weights(config_path):
             if 'model_weights:' in line:
                 model_weights_start = i
                 in_model_weights = True
-            elif in_model_weights and not line.strip().startswith('  '):
+            elif in_model_weights and line.strip() and not line[:1].isspace():
                 model_weights_end = i
                 in_model_weights = False
 
@@ -378,6 +304,25 @@ def optimize_weights(config_path):
     print(f"Final model training will use {final_training_steps} steps.")
     print("These weights are optimized to work well across all k values (1,2,3).")
 
+
+def resolve_config_path(config_path: str) -> str:
+    """Resolve config path from repo root or UIR/config/ (independent of cwd)."""
+    if os.path.isabs(config_path):
+        return config_path
+    if os.path.isfile(config_path):
+        return os.path.abspath(config_path)
+    at_repo = os.path.normpath(os.path.join(_repo_root(), config_path))
+    if os.path.isfile(at_repo):
+        return at_repo
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    sibling = os.path.normpath(
+        os.path.join(script_dir, "..", "config", os.path.basename(config_path))
+    )
+    if os.path.isfile(sibling):
+        return sibling
+    return config_path
+
+
 def main():
     """Main function for the weight optimization pipeline.
     
@@ -391,7 +336,7 @@ def main():
     )
     args = parser.parse_args()
 
-    optimize_weights(args.config)
+    optimize_weights(resolve_config_path(args.config))
 
 if __name__ == "__main__":
     main() 

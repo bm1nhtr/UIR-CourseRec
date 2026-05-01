@@ -34,9 +34,14 @@ Project/
 │       ├── resumes.json      # Learner profiles
 │       ├── taxonomy.csv      # Skill taxonomy
 │       └── mastery_levels.json # Skill mastery definitions
-├── run_clean.py              # Clean runner (no warnings)
-├── setup_environment.py      # Environment setup script
-├── requirements.txt          # Python dependencies
+├── run.py                    # Launcher (optional warning filtering)
+├── setup_environment.py      # Environment setup script (pip + requirements.txt)
+├── LICENSE                   # MIT license (replace REPLACE_WITH_COPYRIGHT_HOLDER)
+├── CITATION.cff              # Software citation metadata (CFF 1.2.0)
+├── pyproject.toml            # Poetry dependencies (preferred)
+├── poetry.toml               # Poetry virtualenv location preferences
+├── poetry.lock               # Optional until generated locally (then commit for reproducible installs)
+├── requirements.txt          # Pip-style list (used by setup_environment.py; keep in sync with pyproject)
 └── README.md                 # Main documentation
 ```
 
@@ -44,116 +49,100 @@ Project/
 
 ### UIR (Usefulness of Information Reward)
 
-1. Install requirements:
-```bash
-pip install -r requirements.txt
-```
+1. **Install with Poetry (recommended)**
 
-2. Configure the system in `config/run.yaml`:
-   - Set usefulness parameters and weights
-   - Choose RL algorithm and training settings
-   - Configure evaluation metrics
+   ```bash
+   python -m pip install poetry
+   poetry install
+   ```
 
-3. Run the pipeline:
-```bash
-# Option 1: Run with complete warning suppression (recommended)
-python run.py --mode pipeline
+   On the first clone, if `poetry.lock` is missing or you changed `pyproject.toml`, run `poetry lock` so installs are fully pinned. That command needs HTTPS access to PyPI you trust (corporate proxies may need extra root certificates).
 
-# Option 2: Run directly (may show TensorBoard warnings)
-python UIR/Scripts/pipeline.py --config UIR/config/run.yaml
-```
+2. **Configure** the system in `UIR/config/run.yaml` (paths are relative to the project root):
 
-### Quick Fix for TensorBoard Warnings
+   - Usefulness parameters and weights
+   - RL algorithm and training settings
+   - Evaluation cadence (`eval_freq`), seeds (`seed`), runs (`nb_runs`)
 
-If you see TensorBoard warnings, use one of these solutions:
+3. **Run** the pipeline (from the repository root):
 
-**Solution 1: Use the main script (recommended)**
-```bash
-python run.py --mode pipeline
-```
+   ```bash
+   # Quieter launcher (filters common TensorBoard / TF noise)
+   poetry run python run.py --mode pipeline
 
-**Solution 2: Set environment variables**
-```bash
-# Windows
-set TF_ENABLE_ONEDNN_OPTS=0
-set TF_CPP_MIN_LOG_LEVEL=2
-python UIR/Scripts/pipeline.py --config UIR/config/run.yaml
+   # Or without Poetry, after activating your venv:
+   python run.py --mode pipeline
+   ```
 
-# Linux/Mac
-export TF_ENABLE_ONEDNN_OPTS=0
-export TF_CPP_MIN_LOG_LEVEL=2
-python UIR/Scripts/pipeline.py --config UIR/config/run.yaml
-```
+   Direct script entry (shows library warnings verbatim—useful for debugging):
 
-**Solution 3: Install compatible packages**
-```bash
-python setup_environment.py
-```
+   ```bash
+   poetry run python UIR/Scripts/pipeline.py --config UIR/config/run.yaml
+   ```
+
+4. **Optional — pip bootstrap**
+
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+   `setup_environment.py` installs from `requirements.txt`; keep that file aligned with `[tool.poetry.dependencies]` whenever you bump dependencies.
+
+
 
 ## Available Scripts
 
-The repository includes several utility scripts for different use cases:
-
 ### Main Scripts
-- **`run.py`** - Main runner with complete warning suppression (recommended)
-- **`setup_environment.py`** - Environment setup and package checking
-- **`UIR/Scripts/pipeline.py`** - Main training pipeline
-- **`UIR/Scripts/weight_optimization.py`** - Weight optimization for reward functions
+
+- **`run.py`** — Launcher with optional subprocess output filtering for TensorBoard-related noise.
+- **`setup_environment.py`** — Environment setup and package checking (`pip install -r requirements.txt`).
+- **`UIR/Scripts/pipeline.py`** — Main training pipeline.
+- **`UIR/Scripts/weight_optimization.py`** — Weight optimization for reward functions.
 
 ### Usage Examples
+
 ```bash
-# Quick start (recommended)
-python run.py --mode pipeline
+poetry run python run.py --mode pipeline
 
 # Weight optimization only
-python run.py --mode weights
+poetry run python run.py --mode weights
 
 # Full workflow (weights + training)
-python run.py --mode both
+poetry run python run.py --mode both
 
-# Environment setup
-python setup_environment.py
+# Environment setup (pip path)
+setup_environment.py
 ```
 
-## Requirements
+## Dependencies
 
-### Dependencies
+Declare dependencies in **`pyproject.toml`**; export for pip-centric workflows:
 
-The project requires the following Python packages:
+```bash
+python -m pip install poetry-plugin-export
+poetry export -f requirements.txt --without-hashes -o requirements.txt
+```
 
-**Core ML/RL Libraries:**
-- `stable-baselines3==2.2.1` - Reinforcement learning algorithms (DQN, PPO, A2C)
-- `gymnasium>=0.28.0` - RL environment interface (compatible with stable-baselines3)
-- `scikit-learn>=1.0.0` - Machine learning utilities (K-means clustering, PCA)
-- `tensorboard>=2.13.0` - TensorBoard for logging and visualization
-- `tensorflow>=2.13.0` - TensorFlow backend for stable-baselines3
+After exporting, reconcile any intentional constraints with `[tool.poetry.dependencies]` before committing.
 
-**Data Processing:**
-- `numpy>=1.21.0` - Numerical computing
-- `pandas>=1.3.0` - Data manipulation and analysis
+Rough stack (versions resolved in lock / export):
 
-**Visualization:**
-- `matplotlib>=3.5.0` - Plotting and visualization
-- `seaborn>=0.11.0` - Statistical data visualization
+**Core ML/RL:** stable-baselines3, gymnasium, scikit-learn, tensorboard, tensorflow  
+**Data:** numpy, pandas  
+**Plots:** matplotlib, seaborn  
+**Config:** PyYAML  
+**Utilities:** tqdm
 
-**Configuration:**
-- `PyYAML==6.0.1` - YAML configuration files
+## License
 
-**Utilities:**
-- `tqdm>=4.62.0` - Progress bars for weight optimization and long-running operations
+This project is released under the **MIT License**. See [LICENSE](LICENSE). 
+
+## Citation
+
+If you use this repository in academic work, cite via [CITATION.cff](CITATION.cff) (Citation File Format 1.2.0). Update `authors`, `repository-code`, and related fields before release.
+
 
 
 ## Documentation
 
-For detailed information about:
-- Development setup and guidelines
-- Configuration options
-- Results management
-- Usefulness-based approach (UIR)
-- Model training and evaluation
-
-Please refer to:
-- `UIR/README_DEVELOPMENT.md` for usefulness-based approach
-
-
-
+For development notes, reward definitions, configuration details, result layout, training, and evaluation, see **`UIR/README_DEVELOPMENT.md`**.

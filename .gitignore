@@ -1,0 +1,26 @@
+# Virtual environments & local toolchain
+.venv/
+venv/
+ENV/
+
+# IDE / OS
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+
+# Bytecode & caches
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.mypy_cache/
+
+# Logs & local artifacts
+*.log
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Sensitive or personal paths (adjust if needed)
+CopyrightReceipt.pdf

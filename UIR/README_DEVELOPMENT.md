@@ -37,7 +37,7 @@ The system implements two main reward function types:
 
 ## Configuration Guide
 
-The system is configured through `config/run.yaml` with the following parameters:
+The system is configured through `UIR/config/run.yaml` (relative to the repository root) with the following parameters:
 
 ### Model Configuration
 ```yaml
@@ -78,7 +78,7 @@ UIR/
 
 ## Warning Suppression
 
-The system includes built-in warning suppression for TensorBoard compatibility issues. Use the clean runner for the best experience:
+The system includes built-in warning suppression for TensorBoard compatibility issues. From the project root, use **`run.py`** as the quiet launcher (it wraps the same pipeline and weight scripts with broad warning filtering):
 
 ### Main Runner Options
 ```bash
@@ -110,7 +110,7 @@ python run.py --mode both
    - Analyze performance patterns
 
 3. **Update Configuration**:
-   - Add optimal weights to `config/run.yaml`
+   - Add optimal weights to `UIR/config/run.yaml`
    - Set appropriate feature type
    - Configure model parameters
 
