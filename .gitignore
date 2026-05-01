@@ -1,26 +1,125 @@
-# Virtual environments & local toolchain
+# --- Local docs & sensitive (repo root)
+SKILLS.md
+CopyrightReceipt.pdf
+
+# --- Project-specific artifacts (from former UIR/.gitignore)
+trash*
+diag_*
+check_*
+~$*
+*_ss*
+ids.txt
+playground.ipynb
+setup.py
+Reproduct_pipeline.py
+Newfeature_pipeline.py
+mlflow/
+
+# --- Virtual environments & env files
+.env
 .venv/
 venv/
 ENV/
+env.bak/
+venv.bak/
 
-# IDE / OS
+# --- IDE / OS
 .idea/
 .vscode/
+.spyderproject
+.spyproject
+.ropeproject
 .DS_Store
 Thumbs.db
 
-# Bytecode & caches
+# --- Bytecode & caches
 __pycache__/
 *.py[cod]
 *$py.class
-.pytest_cache/
-.mypy_cache/
-
-# Logs & local artifacts
+.Python
+.cache
 *.log
+
+# --- C extensions
+*.so
+
+# --- Distribution / packaging
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+*.manifest
+*.spec
+pip-log.txt
+pip-delete-this-directory.txt
+
+# --- Testing / coverage
+htmlcov/
+.tox/
+.nox/
+.coverage
+.coverage.*
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+.pytest_cache/
+cover/
+test/
+
+# --- Translations
+*.mo
+*.pot
+
+# --- Framework / misc (harmless if unused)
+local_settings.py
+db.sqlite3
+db.sqlite3-journal
+instance/
+.webassets-cache
+.scrapy
+docs/_build/
+.pybuilder/
+target/
+ipython_config.py
+profile_default/
+
+# PEP 582
+__pypackages__/
+
+# Celery
+celerybeat-schedule
+celerybeat.pid
+
+*.sage.py
 
 # Jupyter
 .ipynb_checkpoints/
 
-# Sensitive or personal paths (adjust if needed)
-CopyrightReceipt.pdf
+# Sphinx / docs site
+/site
+
+# Type checkers
+.mypy_cache/
+.dmypy.json
+dmypy.json
+.pyre/
+.pytype/
+cython_debug/
+
+# Poetry / PDM extras
+.pdm.toml
